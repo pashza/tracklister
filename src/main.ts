@@ -1,9 +1,8 @@
 import './style.css'
 import { parseTracklist } from './parse'
 import {
-  formatClipboardLinks,
-  formatMarkdownLinks,
-  formatYoutubeLinks,
+  formatDirectLinks,
+  hasAnyLink,
   resolveAll,
   type TrackLinks,
 } from './search'
@@ -18,7 +17,7 @@ app.innerHTML = `
       <p class="brand">Tracklister</p>
       <h1>Paste a tracklist. Get the links.</h1>
       <p class="lede">
-        Runs entirely in your browser — paste a tracklist, get YouTube and Spotify links you can open or copy.
+        Paste a tracklist and get direct YouTube video links — ready to paste into download tools.
       </p>
     </header>
 
@@ -41,8 +40,6 @@ app.innerHTML = `
         <h2>Links</h2>
         <div class="actions compact">
           <button type="button" class="btn primary" id="copy-all">Copy all links</button>
-          <button type="button" class="btn ghost" id="copy-youtube">Copy YouTube</button>
-          <button type="button" class="btn ghost" id="copy-md">Copy markdown</button>
         </div>
       </div>
       <ol class="results" id="results"></ol>
@@ -57,8 +54,6 @@ const statusEl = document.querySelector<HTMLParagraphElement>('#status')!
 const resultsSection = document.querySelector<HTMLElement>('#results-section')!
 const resultsEl = document.querySelector<HTMLOListElement>('#results')!
 const copyAllBtn = document.querySelector<HTMLButtonElement>('#copy-all')!
-const copyYoutubeBtn = document.querySelector<HTMLButtonElement>('#copy-youtube')!
-const copyMdBtn = document.querySelector<HTMLButtonElement>('#copy-md')!
 
 let latestResults: TrackLinks[] = []
 let runId = 0
@@ -86,27 +81,47 @@ function escapeHtml(value: string): string {
 function renderResultItem(result: TrackLinks, index: number): HTMLLIElement {
   const li = document.createElement('li')
   li.className = 'result'
+  if (!hasAnyLink(result)) li.classList.add('missing')
 
   const art = result.artwork
     ? `<img class="art" src="${result.artwork}" alt="" width="48" height="48" loading="lazy" />`
     : `<div class="art placeholder" aria-hidden="true">${index + 1}</div>`
+
+  const chips: string[] = []
+
+  if (result.youtube) {
+    chips.push(`<a class="chip youtube" href="${result.youtube}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(result.youtubeTitle ?? '')}">
+      ${youtubeIcon()} YouTube
+    </a>`)
+  }
+
+  if (result.spotify) {
+    chips.push(`<a class="chip spotify" href="${result.spotify}" target="_blank" rel="noopener noreferrer">
+      ${spotifyIcon()} Spotify
+    </a>`)
+  }
+
+  if (chips.length === 0) {
+    chips.push(`<span class="chip disabled">No link found</span>`)
+  } else {
+    chips.push(`<button type="button" class="chip copy-one" data-index="${index}" title="Copy this track’s link">
+      Copy
+    </button>`)
+  }
+
+  const note = result.youtubeTitle
+    ? `<p class="note">${escapeHtml(result.youtubeTitle)}</p>`
+    : ''
 
   li.innerHTML = `
     ${art}
     <div class="meta">
       <p class="title">${escapeHtml(result.displayTitle)}</p>
       <p class="artist">${escapeHtml(result.displayArtist)}</p>
+      ${note}
     </div>
     <div class="links">
-      <a class="chip youtube" href="${result.youtube}" target="_blank" rel="noopener noreferrer">
-        ${youtubeIcon()} YouTube
-      </a>
-      <a class="chip spotify" href="${result.spotify}" target="_blank" rel="noopener noreferrer">
-        ${spotifyIcon()} Spotify
-      </a>
-      <button type="button" class="chip copy-one" data-index="${index}" title="Copy this track’s links">
-        Copy
-      </button>
+      ${chips.join('')}
     </div>
   `
   return li
@@ -142,16 +157,22 @@ async function findLinks() {
     })
 
     if (currentRun !== runId) return
-    setStatus(`Done — ${latestResults.length} tracks ready.`)
-  } catch {
+    const found = latestResults.filter(hasAnyLink).length
+    setStatus(`Done — ${found} of ${latestResults.length} links found.`)
+  } catch (error) {
     if (currentRun !== runId) return
-    setStatus('Something went wrong while looking up tracks. Try again.')
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    setStatus(`Lookup failed: ${message}`)
   } finally {
     if (currentRun === runId) findBtn.disabled = false
   }
 }
 
 async function copyText(text: string, label: string) {
+  if (!text.trim()) {
+    setStatus('No links to copy.')
+    return
+  }
   try {
     await navigator.clipboard.writeText(text)
     setStatus(`Copied ${label} to clipboard.`)
@@ -174,18 +195,9 @@ clearBtn.addEventListener('click', () => {
 })
 
 copyAllBtn.addEventListener('click', () => {
-  if (latestResults.length === 0) return
-  void copyText(formatClipboardLinks(latestResults), `${latestResults.length} track links`)
-})
-
-copyYoutubeBtn.addEventListener('click', () => {
-  if (latestResults.length === 0) return
-  void copyText(formatYoutubeLinks(latestResults), 'YouTube links')
-})
-
-copyMdBtn.addEventListener('click', () => {
-  if (latestResults.length === 0) return
-  void copyText(formatMarkdownLinks(latestResults), 'markdown')
+  const text = formatDirectLinks(latestResults)
+  const count = text ? text.split('\n').length : 0
+  void copyText(text, `${count} direct links`)
 })
 
 resultsEl.addEventListener('click', (event) => {
@@ -196,10 +208,7 @@ resultsEl.addEventListener('click', (event) => {
   const index = Number(button.dataset.index)
   const result = latestResults[index]
   if (!result) return
-  void copyText(
-    `${result.displayArtist} – ${result.displayTitle}\n${result.youtube}\n${result.spotify}`,
-    'track links',
-  )
+  void copyText(formatDirectLinks([result]), 'link')
 })
 
 tracklistEl.addEventListener('keydown', (event) => {

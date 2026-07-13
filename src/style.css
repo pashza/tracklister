@@ -303,6 +303,19 @@ textarea::placeholder {
   text-overflow: ellipsis;
 }
 
+.result.missing {
+  opacity: 0.72;
+}
+
+.note {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -316,6 +329,18 @@ textarea::placeholder {
   font: 600 0.82rem/1 var(--font-body);
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.chip.disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.chip.disabled:hover {
+  transform: none;
+  border-color: var(--line);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--ink);
 }
 
 .chip svg {
