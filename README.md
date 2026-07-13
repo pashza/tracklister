@@ -6,10 +6,10 @@ Built for workflows like MediaHuman YouTube to MP3 — copied links are `youtube
 
 ## Features
 
-- Paste messy tracklists (`Artist: Title`, `Artist - Title`, numbered lines, headers)
+- Paste messy tracklists (`Artist: Title`, `Artist - Title`, `Title ~ Artist`, numbered discs, remix lines, section headers)
 - Resolve each line to a **direct YouTube video URL**
 - Optional **direct Spotify track URLs** (needs free Spotify API credentials)
-- Copy all links, YouTube-only URLs, or markdown
+- **Copy all links** as a plain list of direct URLs
 
 ## How it works
 
