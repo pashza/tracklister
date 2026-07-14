@@ -1,4 +1,4 @@
-import { resolveTracks, type TrackInput } from '../server/resolveTracks'
+import { resolveTracks, type TrackInput } from './resolveTracks'
 
 export const config = {
   maxDuration: 300,

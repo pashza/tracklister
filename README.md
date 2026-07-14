@@ -21,7 +21,7 @@ The UI is a static Vite app. A small **Vercel serverless function** (`/api/resol
 4. Pick the best matching video from the first results
 5. If Spotify credentials are set, search Spotify and return the track URL
 
-Client-only search URLs were intentionally removed — download tools treat search pages as playlists of hundreds of results.
+The function is bundled at build time (`npm run build` → `api/resolve.js`) so Vercel gets a single self-contained entry file.
 
 ## Run locally
 

@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite'
-import { resolveTracks, type TrackInput } from './server/resolveTracks'
+import { resolveTracks, type TrackInput } from './lib/resolveTracks'
 
 function resolveApiPlugin(): Plugin {
   return {
