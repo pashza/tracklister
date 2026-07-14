@@ -15,10 +15,6 @@ dist-ssr
 .env.*
 !.env.example
 
-# Generated Vercel function bundle
-api/resolve.js
-api/resolve.js.map
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
