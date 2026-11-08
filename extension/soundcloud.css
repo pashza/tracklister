@@ -1,0 +1,53 @@
+#tracklister-button {
+  position: fixed;
+  right: 20px;
+  bottom: 72px;
+  z-index: 2147483000;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #e8c547;
+  color: #1a1605;
+  font: 600 14px/1 system-ui, sans-serif;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+#tracklister-button:hover {
+  background: #f0d36a;
+}
+
+#tracklister-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+#tracklister-button[hidden] {
+  display: none;
+}
+
+#tracklister-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 120px;
+  z-index: 2147483000;
+  max-width: 320px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #0f1f1c;
+  color: #edf3ef;
+  font: 500 13px/1.4 system-ui, sans-serif;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+#tracklister-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

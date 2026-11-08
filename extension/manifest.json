@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Tracklister",
+  "version": "1.0.0",
+  "description": "Send a SoundCloud set's tracklist (or any selected text) to Tracklister to get YouTube links, playlists and sorted download folders.",
+  "icons": {
+    "48": "icon.svg",
+    "96": "icon.svg"
+  },
+  "permissions": ["contextMenus", "activeTab", "scripting"],
+  "host_permissions": ["https://soundcloud.com/*", "https://api-v2.soundcloud.com/*"],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "action": {
+    "default_title": "Send tracklist to Tracklister",
+    "default_icon": "icon.svg"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://soundcloud.com/*"],
+      "js": ["soundcloud.js"],
+      "css": ["soundcloud.css"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "tracklister@tracklister-sage.vercel.app",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  }
+}
