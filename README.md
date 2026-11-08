@@ -1,22 +1,75 @@
 # Tracklister
 
-Paste a DJ tracklist. Get **direct** YouTube video links (and Spotify track links).
+Paste a DJ tracklist (or send it straight from a SoundCloud set with the Firefox add-on). Tracklister:
 
-Built for workflows like MediaHuman YouTube to MP3 — copied links are `youtube.com/watch?v=…`, not search pages.
+1. finds a **direct YouTube link** for every track (plus Spotify when configured),
+2. turns the set into a **playlist** — YouTube, Spotify / SoundCloud / Apple Music / Deezer / Tidal (via Soundiiz), or an `.m3u8` file,
+3. after you download the tracks (e.g. with MediaHuman YouTube to MP3, which dumps everything into one folder), **sorts the files into a folder per set**, numbered in set order, with an `.m3u8` playlist next to them — ready to drag into rekordbox.
 
-## Features
+Everything runs in the browser; your audio files are never uploaded.
 
-- Paste messy tracklists (`Artist: Title`, `Artist - Title`, `Title ~ Artist`, numbered discs, remix lines, section headers)
-- Resolve each line to a **direct YouTube video URL**
-- Optional **direct Spotify track URLs** (needs free Spotify API credentials)
-- **Copy all links** as a plain list of direct URLs
+## Workflow
 
-## How it works
+| Step | What you do | What you get |
+| --- | --- | --- |
+| 1. Tracklist | Paste it, or click **▶ Tracklister** on a SoundCloud set | Parsed tracks (timestamps, numbering and `[LABEL]` tags removed) |
+| 2. Links | **Find links** → **Copy YouTube links** | One direct `youtube.com/watch?v=…` per line for MediaHuman. Fix wrong matches with **Fix** |
+| 3. Playlist | Pick an export | YouTube playlist tab, Soundiiz CSV, `.m3u8` (YouTube URLs, plays in VLC) or a text list |
+| 4. Sort downloads | **Choose downloads folder** → check the matches | **Organizer** (tiny zip with scripts that *move* the files) or **Sorted ZIP** (renamed *copies*) |
 
-The UI is a static Vite app. A small **Vercel serverless function** (`/api/resolve`) does the heavy lifting:
+Sets are saved in the browser (**Saved sets**), so you can come back after the downloads finish.
+
+### Playlist targets
+
+- **YouTube** — opens YouTube's anonymous playlist for up to 50 tracks per tab; press *Save* there to keep it.
+- **Spotify, SoundCloud, Apple Music, Deezer, Tidal, YouTube Music** — download the CSV, then on [Soundiiz](https://soundiiz.com/) choose *Import playlist → From file*.
+- **On your computer** — the `.m3u8` lists the YouTube URLs, so the playlist keeps its links.
+
+### Sorting downloads for rekordbox
+
+Pick the folder MediaHuman downloads into. Tracklister matches each track to a file by name, and you can correct any row from the dropdown. Then either:
+
+- **Organizer (moves files):** unzip it *into that same downloads folder* and run
+  - Windows: double-click `organize-windows.bat`
+  - Mac: open Terminal in the folder and run `bash organize-mac.command`
+- **Sorted ZIP (copies files):** unzip anywhere.
+
+Either way you get:
+
+```
+Set name/
+  01 - Artist - Title.mp3
+  02 - Artist - Title.mp3
+  …
+  Set name.m3u8          ← relative paths; YouTube links kept as comments
+  Set name - links.txt
+```
+
+In rekordbox, drag the folder onto **Playlists** (or *File → Import → Import Playlist* and pick the `.m3u8`).
+
+## Firefox add-on
+
+`extension/` is a small Firefox add-on:
+
+- On a SoundCloud track, set or playlist page it adds a **▶ Tracklister** button. It reads the tracklist from the description. If the description has none, it uses the comment that looks most like a tracklist. On playlist pages it uses the playlist's tracks. Then it opens Tracklister with everything filled in.
+- On any site, select a tracklist, then right-click → **Send tracklist to Tracklister** (or click the toolbar icon).
+
+Install for testing: open `about:debugging#/runtime/this-firefox` → *Load Temporary Add-on…* → pick `extension/manifest.json`. Temporary add-ons are removed when Firefox restarts. To keep it installed, sign it as an unlisted (self-distributed) add-on with `npx web-ext sign -s extension --channel=unlisted` using free [AMO API keys](https://addons.mozilla.org/developers/addon/api/key/), then open the `.xpi` it produces in Firefox.
+
+The add-on opens `https://tracklister-sage.vercel.app/`. Change `TRACKLISTER_URL` in `extension/background.js` to `http://localhost:5173/` while developing.
+
+```bash
+npm run ext:lint    # web-ext lint
+npm run ext:run     # launch Firefox with the add-on loaded
+npm run ext:build   # zip into web-ext-artifacts/
+```
+
+## How link lookup works
+
+The UI is a static Vite app. A small **Vercel serverless function** (`/api/resolve`) does the lookups:
 
 1. Parse artist + title
-2. Optionally enrich names via Apple’s iTunes Search API
+2. Optionally clean up names via Apple's iTunes Search API (only when iTunes has the same remix/edit, so the version that was played is kept)
 3. Search YouTube with [youtubei.js](https://github.com/LuanRT/YouTube.js) (InnerTube — no YouTube API key)
 4. Pick the best matching video from the first results
 5. If Spotify credentials are set, search Spotify and return the track URL
@@ -27,10 +80,9 @@ The function is bundled into `api/resolve.js` (checked in and regenerated by `np
 
 ```bash
 npm install
-npm run dev
+npm run dev     # http://localhost:5173, also serves /api/resolve
+npm test
 ```
-
-Open `http://localhost:5173`. The Vite dev server also hosts `/api/resolve`.
 
 ```bash
 npm run build
