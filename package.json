@@ -1,21 +1,27 @@
 {
   "name": "tracklister",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && node scripts/bundle-api.mjs",
     "build:api": "node scripts/bundle-api.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "ext:lint": "npx --yes web-ext lint -s extension",
+    "ext:run": "npx --yes web-ext run -s extension",
+    "ext:build": "npx --yes web-ext build -s extension --overwrite-dest"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
     "esbuild": "^0.27.2",
     "typescript": "~6.0.2",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^5.1.0"
   },
   "dependencies": {
+    "client-zip": "^2.5.1",
     "youtubei.js": "^17.2.0"
   }
 }
