@@ -226,13 +226,28 @@ export async function createYoutubeClient() {
   return Innertube.create()
 }
 
+/** Normalized "(…)" / "[…]" contents — the remix/edit/version a DJ actually played. */
+function versionTags(title: string): string {
+  return [...title.matchAll(/[([]([^)\]]+)[)\]]/g)]
+    .map((match) => normalize(match[1]))
+    .filter((tag) => !/^(?:feat|ft|with)\b/.test(tag))
+    .sort()
+    .join('|')
+}
+
+/** iTunes often returns a different remix of the same song; only trust it for the same version. */
+export function pickDisplayTitle(original: string, itunesTitle: string | undefined): string {
+  if (!itunesTitle) return original
+  return versionTags(original) === versionTags(itunesTitle) ? itunesTitle : original
+}
+
 export async function resolveTrack(
   yt: Awaited<ReturnType<typeof createYoutubeClient>>,
   track: TrackInput,
 ): Promise<ResolvedTrack> {
   const itunes = await lookupItunes(track)
   const displayArtist = itunes?.artistName ?? track.artist ?? 'Unknown artist'
-  const displayTitle = itunes?.trackName ?? track.title
+  const displayTitle = pickDisplayTitle(track.title, itunes?.trackName)
 
   const [youtube, spotify] = await Promise.all([
     searchYoutube(yt, track, displayArtist, displayTitle).catch(() => null),

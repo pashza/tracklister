@@ -19,6 +19,13 @@ const COLON_LABEL_RE = /^.+:\s*$/
 
 const NUMBER_PREFIX_RE = /^\s*(?:\d{1,3}[\.\)\-:]\s*|\d{1,3}\s+|\(\d{1,3}\)\s*)/
 
+/** "00:00", "[1:02:33]", "(12:30) -" cue times from set descriptions and comments. */
+const TIMESTAMP_RE = /^\s*[\[(]?\d{1,2}:\d{2}(?::\d{2})?[\])]?\s*(?:[-–—|.:]\s+)?/
+
+const URL_RE = /https?:\/\/|www\.|\.com\/|@\w/i
+
+const UNKNOWN_RE = /^(?:id|\?+|unknown|tba)$/i
+
 /** Orphan remix / version lines meant to continue the previous track. */
 const CONTINUATION_RE = /^\([^)]+\)\.?$/
 
@@ -30,12 +37,22 @@ function clean(value: string): string {
   return value.replace(/\s+/g, ' ').trim()
 }
 
+/** Trailing "[LABEL]" — the 1001tracklists / Essential Mix convention. */
+const BRACKET_SUFFIX_RE = /\s*\[([^\]]*(?:\[[^\]]*\][^\]]*)*)\]\s*$/
+
+const VERSION_RE = /\b(remix|mix|edit|version|remaster|bootleg|dub|vip|rework)\b/i
+
 function stripLabelSuffix(title: string): string {
-  // Keep remix/version tags; only drop label/catalog parentheses.
-  if (/\b(remix|mix|edit|version|remaster|bootleg)\b/i.test(title.match(/\(([^)]+)\)\s*$/)?.[1] ?? '')) {
-    return clean(title)
+  let result = title
+  const bracket = result.match(BRACKET_SUFFIX_RE)
+  if (bracket && !VERSION_RE.test(bracket[1]) && bracket.index! > 0) {
+    result = result.slice(0, bracket.index)
   }
-  return clean(title.replace(LABEL_SUFFIX_RE, ''))
+  // Keep remix/version tags; only drop label/catalog parentheses.
+  if (VERSION_RE.test(result.match(/\(([^)]+)\)\s*$/)?.[1] ?? '')) {
+    return clean(result)
+  }
+  return clean(result.replace(LABEL_SUFFIX_RE, ''))
 }
 
 function looksLikeSectionOrHeader(line: string): boolean {
@@ -108,12 +125,19 @@ export function parseTracklist(text: string): ParsedTrack[] {
       continue
     }
 
-    line = line.replace(NUMBER_PREFIX_RE, '').trim()
+    if (URL_RE.test(line)) continue
+
+    line = line
+      .replace(TIMESTAMP_RE, '')
+      .replace(NUMBER_PREFIX_RE, '')
+      .replace(TIMESTAMP_RE, '')
+      .trim()
     if (!line || looksLikeSectionOrHeader(line)) continue
     if (CONTINUATION_RE.test(line)) continue
 
     const split = splitArtistTitle(line)
     if (!split) continue
+    if (UNKNOWN_RE.test(split.title.trim())) continue
 
     const track = makeTrack(split.artist, split.title)
     if (!track.title) continue
