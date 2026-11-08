@@ -139,10 +139,17 @@ async function createYoutubeClient() {
   const { Innertube } = await import("youtubei.js");
   return Innertube.create();
 }
+function versionTags(title) {
+  return [...title.matchAll(/[([]([^)\]]+)[)\]]/g)].map((match) => normalize(match[1])).filter((tag) => !/^(?:feat|ft|with)\b/.test(tag)).sort().join("|");
+}
+function pickDisplayTitle(original, itunesTitle) {
+  if (!itunesTitle) return original;
+  return versionTags(original) === versionTags(itunesTitle) ? itunesTitle : original;
+}
 async function resolveTrack(yt, track) {
   const itunes = await lookupItunes(track);
   const displayArtist = itunes?.artistName ?? track.artist ?? "Unknown artist";
-  const displayTitle = itunes?.trackName ?? track.title;
+  const displayTitle = pickDisplayTitle(track.title, itunes?.trackName);
   const [youtube, spotify] = await Promise.all([
     searchYoutube(yt, track, displayArtist, displayTitle).catch(() => null),
     searchSpotify(displayArtist, displayTitle).catch(() => null)
